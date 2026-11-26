@@ -79,7 +79,14 @@ def run_migrations_online() -> None:
         )
 
         with context.begin_transaction():
+            initialize = context.get_x_argument(as_dictionary=True).get("seed") == "1"
+            if initialize:
+                connection.exec_driver_sql("SELECT pg_advisory_xact_lock(4895632)")
+                initialize = context.get_context().get_current_revision() is None
             context.run_migrations()
+            if initialize:
+                from seed import seed_database
+                seed_database(connection)
 
 
 if context.is_offline_mode():
